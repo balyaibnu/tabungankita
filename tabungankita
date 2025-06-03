@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Catatan Keuangan</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    input, select, button { margin: 5px; padding: 5px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    th { background-color: #f4f4f4; }
+    .btn-delete { color: red; cursor: pointer; }
+    #loginSection { display: block; }
+    #mainApp { display: none; }
+  </style>
+</head>
+<body>
+  <div id="loginSection">
+    <h2>Login</h2>
+    <input type="text" id="username" placeholder="Username">
+    <input type="password" id="password" placeholder="Password">
+    <button onclick="login()">Login</button>
+    <p id="loginError" style="color:red;"></p>
+  </div>
+
+  <div id="mainApp">
+    <h2>Catatan Keuangan</h2>
+
+    <form id="formTransaksi">
+      <input type="date" id="tanggal" required>
+      <input type="number" id="nominal" placeholder="Nominal" required>
+      <select id="jenis">
+        <option value="masuk">Masuk (+)</option>
+        <option value="keluar">Keluar (-)</option>
+      </select>
+      <input type="text" id="keterangan" placeholder="Keterangan">
+      <button type="submit">Tambah</button>
+    </form>
+
+    <h3>Saldo: Rp <span id="saldo">0</span></h3>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Tanggal</th>
+          <th>Nominal</th>
+          <th>Jenis</th>
+          <th>Keterangan</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody id="history"></tbody>
+    </table>
+  </div>
+
+  <script>
+    const USERS = [{ username: "inuawa", password: "bismillahm4" }];
+
+    function login() {
+      const user = document.getElementById("username").value;
+      const pass = document.getElementById("password").value;
+      const valid = USERS.find(u => u.username === user && u.password === pass);
+
+      if (valid) {
+        document.getElementById("loginSection").style.display = "none";
+        document.getElementById("mainApp").style.display = "block";
+        loadData();
+      } else {
+        document.getElementById("loginError").textContent = "Username atau password salah!";
+      }
+    }
+
+    let saldo = 0;
+    let transaksiList = [];
+    const saldoEl = document.getElementById('saldo');
+    const historyEl = document.getElementById('history');
+    const form = document.getElementById('formTransaksi');
+
+    function loadData() {
+      console.log("Memuat data dari localStorage...");
+      const saved = localStorage.getItem('transaksiList');
+      if (saved) {
+        transaksiList = JSON.parse(saved);
+        console.log("Data ditemukan:", transaksiList);
+        renderTransaksi();
+      } else {
+        console.log("Tidak ada data disimpan sebelumnya.");
+      }
+    }
+
+    function saveData() {
+      console.log("Menyimpan data:", transaksiList);
+      localStorage.setItem('transaksiList', JSON.stringify(transaksiList));
+    }
+
+    function renderTransaksi() {
+      console.log("Merender transaksi...");
+      historyEl.innerHTML = '';
+      saldo = 0;
+      transaksiList.forEach((item, index) => {
+        console.log(`Transaksi #${index}:`, item);
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${item.tanggal}</td>
+          <td>Rp ${item.nominal.toLocaleString()}</td>
+          <td>${item.jenis}</td>
+          <td>${item.keterangan}</td>
+          <td><span class="btn-delete" data-index="${index}">Hapus</span></td>
+        `;
+        historyEl.appendChild(tr);
+        saldo += item.jenis === 'masuk' ? item.nominal : -item.nominal;
+      });
+      console.log("Saldo terbaru:", saldo);
+      saldoEl.textContent = saldo.toLocaleString();
+    }
+
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      console.log("Form disubmit");
+
+      const tanggal = document.getElementById('tanggal').value;
+      const nominal = parseInt(document.getElementById('nominal').value);
+      const jenis = document.getElementById('jenis').value;
+      const keterangan = document.getElementById('keterangan').value;
+
+      console.log("Input baru:", { tanggal, nominal, jenis, keterangan });
+      transaksiList.push({ tanggal, nominal, jenis, keterangan });
+      saveData();
+      renderTransaksi();
+      form.reset();
+    });
+
+    historyEl.addEventListener('click', function(e) {
+      if (e.target.classList.contains('btn-delete')) {
+        const index = e.target.dataset.index;
+        console.log(`Menghapus transaksi pada index ${index}`);
+        transaksiList.splice(index, 1);
+        saveData();
+        renderTransaksi();
+      }
+    });
+  </script>
+</body>
+</html>
